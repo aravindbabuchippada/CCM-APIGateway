@@ -1,0 +1,11 @@
+microservices:
+  security-uri: lb://ccm-security
+  client-uri: lb://ccm-client
+  customer-uri: lb://ccm-customer
+
+EUREKA_URL: http://localhost:8761/eureka/
+
+logging:
+  level:
+    com.hcx.gateway: INFO
+    org.springframework: INFO

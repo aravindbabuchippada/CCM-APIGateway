@@ -1,0 +1,22 @@
+<configuration>
+    <!-- path to Embedded Tomcat logs folder -->
+    <property name="LOG_PATH" value="${LOG_PATH:-./logs}" />
+
+    <appender name="GlobalAppender" class="ch.qos.logback.core.FileAppender">
+        <file>${LOG_PATH}/CCM-APIGateway/ccm-api-gateway-global.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d %-5level %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Package-specific loggers -->
+    <logger name="com.ccm.gateway.logging" level="DEBUG" additivity="false">
+        <appender-ref ref="GlobalAppender"/>
+    </logger>
+
+    <!-- Root fallback logger -->
+    <root level="DEBUG">
+        <appender-ref ref="GlobalAppender"/>
+    </root>
+</configuration>
