@@ -1,7 +1,23 @@
 microservices:
-  security-uri: lb://ccm-security
-  client-uri: lb://ccm-client
-  customer-uri: lb://ccm-customer
+  # Service names
+  security-name: ccm-security
+  client-name: ccm-client
+  customer-name: ccm-customer
+
+  # URIs used in ServerConfig class
+  security-uri: lb://${microservices.security-name}
+  client-uri: lb://${microservices.client-name}
+  customer-uri: lb://${microservices.customer-name}
+
+# Warm up load balancer for these services at startup (avoids slow first call)
+spring:
+  cloud:
+    loadbalancer:
+      eager-load:
+        clients:
+          - ${microservices.security-name}
+          - ${microservices.client-name}
+          - ${microservices.customer-name}
 
 EUREKA_URL: http://localhost:8761/eureka/
 

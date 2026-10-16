@@ -4,6 +4,7 @@ import com.ccm.gateway.exception.RouteConfigurationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -13,7 +14,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
+
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 
@@ -38,7 +43,14 @@ public class GatewayConfig {
                             .path(BASE_PATH_SECURITY)
                             .filters(f -> f
                                     .rewritePath("/ccm/security/(?<remaining>.*)", REWRITE_SECURITY)
-                                    .addRequestHeader(X_GATEWAY_HEADER, GATEWAY_NAME))
+                                    .addRequestHeader(X_GATEWAY_HEADER, GATEWAY_NAME)
+                                    .circuitBreaker(c -> c
+                                            .setName("securityCB")
+                                            .setFallbackUri("forward:/fallback/security"))
+                                    .retry(c -> c
+                                            .setRetries(2)
+                                            .setMethods(HttpMethod.GET)
+                                            .setExceptions(IOException.class, TimeoutException.class)))
                             .uri(serverConfig.getSecurityUri()))
 
                     // Client service routes
@@ -46,7 +58,14 @@ public class GatewayConfig {
                             .path(BASE_PATH_CLIENT)
                             .filters(f -> f
                                     .rewritePath("/ccm/client/(?<remaining>.*)", REWRITE_CLIENT)
-                                    .addRequestHeader(X_GATEWAY_HEADER, GATEWAY_NAME))
+                                    .addRequestHeader(X_GATEWAY_HEADER, GATEWAY_NAME)
+                                    .circuitBreaker(c -> c
+                                            .setName("clientCB")
+                                            .setFallbackUri("forward:/fallback/client"))
+                                    .retry(c -> c
+                                            .setRetries(2)
+                                            .setMethods(HttpMethod.GET)
+                                            .setExceptions(IOException.class, TimeoutException.class)))
                             .uri(serverConfig.getClientUri()))
 
                     // Customer service routes
@@ -54,7 +73,14 @@ public class GatewayConfig {
                             .path(BASE_PATH_CUSTOMER)
                             .filters(f -> f
                                     .rewritePath("/ccm/customer/(?<remaining>.*)", REWRITE_CUSTOMER)
-                                    .addRequestHeader(X_GATEWAY_HEADER, GATEWAY_NAME))
+                                    .addRequestHeader(X_GATEWAY_HEADER, GATEWAY_NAME)
+                                    .circuitBreaker(c -> c
+                                            .setName("customerCB")
+                                            .setFallbackUri("forward:/fallback/customer"))
+                                    .retry(c -> c
+                                            .setRetries(2)
+                                            .setMethods(HttpMethod.GET)
+                                            .setExceptions(IOException.class, TimeoutException.class)))
                             .uri(serverConfig.getCustomerUri()))
                     .build();
         } catch (Exception e) {

@@ -1,5 +1,6 @@
 server:
   port: 8080
+  shutdown: graceful                            # Finish in-flight requests before stopping
 
 spring:
   profiles:
@@ -14,10 +15,37 @@ spring:
         locator:
           enabled: false
           lower-case-service-id: false
+      httpclient:
+        pool:
+          max-idle-time: 20s         # Drop idle connections before the service's keep-alive closes them
     loadbalancer:
       cache:
         ttl: 5s
         enabled: true
+
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true             # Breaker state appears in /actuator/health
+        slidingWindowSize: 10                     # Look at the last 10 calls when calculating failure rate
+        minimumNumberOfCalls: 10                  # Don't evaluate (or open) until at least 10 calls are recorded
+        failureRateThreshold: 50                  # Circuit opens if 5 or more of those 10 calls fail
+        waitDurationInOpenState: 10s              # Stays open for 10s, then goes to HALF_OPEN
+        permittedNumberOfCallsInHalfOpenState: 3  # 3 trial calls decide whether it closes or reopens
+    instances:
+      securityCB: { baseConfig: default }
+      clientCB: { baseConfig: default }
+      customerCB: { baseConfig: default }
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 10s                      # Any call longer than 10s counts as a failure
+    instances:
+      securityCB: { baseConfig: default }
+      clientCB: { baseConfig: default }
+      customerCB: { baseConfig: default }
 
 # Eureka Client Configuration
 eureka:
@@ -38,9 +66,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics,gateway,circuitbreakers,circuitbreakerevents
   endpoint:
     health:
+      circuitbreakers:
+        enabled: true
       show-details: always
     gateway:
       enabled: true
